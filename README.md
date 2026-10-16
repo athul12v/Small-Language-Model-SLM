@@ -100,8 +100,3 @@ Responses should be validated before use in business-critical workflows.
 By combining parameter-efficient fine-tuning, enterprise information retrieval, and a simple chat interface, the project provides a foundation for developing lightweight, locally running AI assistants tailored to organizational needs.
 
 ---
-
-**Built with Python, PyTorch, Qwen2.5-0.5B, QLoRA, and Streamlit.**
-```
-
-**Note:** The license badge is marked _To Be Determined_ because you haven't specified a project license. Update it once you choose a license.
