@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# Model weights and downloaded models
+models/
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.gguf
+
+# Training outputs and checkpoints
+outputs/
+checkpoints/
+runs/
+wandb/
+mlruns/
+
+# Enterprise datasets
+data/
+*.jsonl
+*.csv
+*.parquet
+*.xlsx
+
+# Logs
+*.log
+logs/
