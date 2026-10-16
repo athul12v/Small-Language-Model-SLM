@@ -30,13 +30,6 @@ runs/
 wandb/
 mlruns/
 
-# Enterprise datasets
-data/
-*.jsonl
-*.csv
-*.parquet
-*.xlsx
-
 # Logs
 *.log
 logs/
