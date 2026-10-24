@@ -11,7 +11,7 @@ from harness import Harness
 INDEX_HTML = Path(__file__).parent / "template" / "index.html"
 
 # Initialize AI Harness
-print("Initializing SLM Enterprise AI Harness...")
+print("Initializing SLM Enterprise...")
 harness = Harness()
 print("Harness ready.")
 
