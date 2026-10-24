@@ -1,5 +1,5 @@
 """
-chat.py - Simple Terminal CLI for Apex Enterprise Assistant.
+chat.py - Simple Terminal CLI for SLM Enterprise Assistant.
 """
 
 from harness import Harness
@@ -7,7 +7,7 @@ from harness import Harness
 
 def main():
     print("=" * 60)
-    print("APEX ENTERPRISE SLM ASSISTANT (CLI)")
+    print("SLM ENTERPRISE ASSISTANT (CLI)")
     print("=" * 60)
     print("Guarded by the AI Harness. Type 'exit' to quit.\n")
 

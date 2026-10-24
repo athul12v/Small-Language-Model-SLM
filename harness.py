@@ -332,7 +332,7 @@ class Harness:
         ])
 
         system_prompt = (
-            "You are Apex Enterprise Assistant. Answer employee questions using strictly "
+            "You are SLM Enterprise Assistant. Answer employee questions using strictly "
             "the provided verified documents. If the documents do not contain the answer, say "
             "that the information is insufficient. Do not guess or invent policies."
         )

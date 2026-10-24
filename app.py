@@ -1,5 +1,5 @@
 """
-app.py - Simple Web Server for Apex Enterprise AI Assistant.
+app.py - Simple Web Server for SLM Enterprise AI Assistant.
 """
 
 import os
@@ -11,7 +11,7 @@ from harness import Harness
 INDEX_HTML = Path(__file__).parent / "template" / "index.html"
 
 # Initialize AI Harness
-print("Initializing Apex AI Harness...")
+print("Initializing SLM Enterprise AI Harness...")
 harness = Harness()
 print("Harness ready.")
 
@@ -61,7 +61,7 @@ def main():
     port = int(os.environ.get("PORT", 8000))
     server = HTTPServer(("", port), ChatHandler)
     print("=" * 60)
-    print(f">> Apex Enterprise AI Assistant running at: http://localhost:{port}")
+    print(f">> SLM Enterprise AI Assistant running at: http://localhost:{port}")
     print("=" * 60)
     print("Open http://localhost:8000 in your browser. Press Ctrl+C to exit.")
     try:
