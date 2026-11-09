@@ -76,7 +76,7 @@ class KnowledgeRetriever:
 
 
 # =====================================================================
-# 2. SLM Model Wrapper (Qwen2.5-0.5B + PEFT, with Demo Fallback)
+# 2. SLM Model Wrapper (Qwen2.5-0.5B + PEFT LoRA, with Demo Fallback)
 # =====================================================================
 class ModelBackend:
     """Runs inference on the fine-tuned SLM, or provides a grounded fallback if weights/GPU are absent."""
@@ -90,30 +90,29 @@ class ModelBackend:
     def _try_load_model(self):
         try:
             import torch
-            from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
+            from transformers import AutoTokenizer, AutoModelForCausalLM
             from peft import PeftModel
 
-            if torch.cuda.is_available() and MODEL_PATH.exists() and ADAPTER_PATH.exists():
-                print(f"Loading Qwen2.5-0.5B on GPU: {torch.cuda.get_device_name(0)}...")
+            if MODEL_PATH.exists() and ADAPTER_PATH.exists():
+                is_cuda = torch.cuda.is_available()
+                device_desc = f"GPU: {torch.cuda.get_device_name(0)}" if is_cuda else "CPU"
+                dtype = torch.float16 if is_cuda else torch.float32
+                print(f"Loading Qwen2.5-0.5B on {device_desc} (LoRA)...")
                 self.tokenizer = AutoTokenizer.from_pretrained(str(ADAPTER_PATH), local_files_only=True)
-                qconfig = BitsAndBytesConfig(
-                    load_in_4bit=True,
-                    bnb_4bit_compute_dtype=torch.float16,
-                    bnb_4bit_quant_type="nf4",
-                    bnb_4bit_use_double_quant=True,
-                )
                 base = AutoModelForCausalLM.from_pretrained(
                     str(MODEL_PATH),
-                    quantization_config=qconfig,
-                    device_map="auto",
+                    torch_dtype=dtype,
+                    device_map="auto" if is_cuda else None,
                     local_files_only=True,
                 )
                 self.model = PeftModel.from_pretrained(base, str(ADAPTER_PATH), local_files_only=True)
+                if not is_cuda:
+                    self.model.to("cpu")
                 self.model.eval()
                 self.is_real_model = True
                 print("Model loaded successfully.")
             else:
-                print("Model weights or CUDA GPU not detected. Using Demo Mode (retrieving real enterprise records).")
+                print("Model weights not detected. Using Demo Mode (retrieving real enterprise records).")
         except Exception as e:
             print(f"PyTorch model not loaded ({e}). Running in Demo Mode.")
 

@@ -2,7 +2,6 @@ import torch
 from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM,
-    BitsAndBytesConfig,
 )
 from peft import PeftModel
 
@@ -34,21 +33,14 @@ tokenizer = AutoTokenizer.from_pretrained(
 )
 
 # --------------------------------------------------
-# Load base model in 4-bit precision
+# Load base model in 16-bit precision (LoRA)
 # --------------------------------------------------
 
-print("\nLoading base model in 4-bit precision...")
-
-quantization_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_quant_type="nf4",
-    bnb_4bit_compute_dtype=torch.float16,
-    bnb_4bit_use_double_quant=True,
-)
+print("\nLoading base model in 16-bit precision (LoRA)...")
 
 base_model = AutoModelForCausalLM.from_pretrained(
     BASE_MODEL,
-    quantization_config=quantization_config,
+    torch_dtype=torch.float16,
     device_map="auto",
     local_files_only=True,
 )

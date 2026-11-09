@@ -5,7 +5,6 @@ from datasets import load_dataset
 from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM,
-    BitsAndBytesConfig,
     Trainer,
     TrainingArguments,
     DataCollatorForSeq2Seq,
@@ -13,7 +12,6 @@ from transformers import (
 from peft import (
     LoraConfig,
     get_peft_model,
-    prepare_model_for_kbit_training,
 )
 
 # =====================================================
@@ -56,22 +54,14 @@ if tokenizer.pad_token is None:
 tokenizer.padding_side = "right"
 
 # =====================================================
-# 3. Load the model in 4-bit precision
+# 3. Load the model in 16-bit precision (LoRA)
 # =====================================================
 
-print("\nLoading model in 4-bit precision...")
-
-quantization_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_quant_type="nf4",
-    bnb_4bit_compute_dtype=torch.float16,
-    bnb_4bit_use_double_quant=True,
-)
+print("\nLoading model in 16-bit precision (LoRA)...")
 
 model = AutoModelForCausalLM.from_pretrained(
     MODEL_PATH,
-    quantization_config=quantization_config,
-    dtype=torch.float16,
+    torch_dtype=torch.float16,
     device_map={"": 0},
     local_files_only=True,
 )
@@ -79,15 +69,13 @@ model = AutoModelForCausalLM.from_pretrained(
 model.config.use_cache = False
 
 # =====================================================
-# 4. Prepare model for QLoRA
+# 4. Prepare model for LoRA
 # =====================================================
 
-print("\nPreparing model for QLoRA...")
+print("\nPreparing model for LoRA...")
 
-model = prepare_model_for_kbit_training(
-    model,
-    use_gradient_checkpointing=True,
-)
+# Enable input gradients for PEFT when gradient checkpointing is enabled
+model.enable_input_require_grads()
 
 lora_config = LoraConfig(
     r=8,

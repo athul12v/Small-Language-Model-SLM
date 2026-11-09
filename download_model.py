@@ -2,7 +2,7 @@ from huggingface_hub import snapshot_download
 from pathlib import Path
 
 MODEL_ID = "Qwen/Qwen2.5-0.5B-Instruct"
-LOCAL_DIR = Path.home() / "slm-finetuning" / "models" / "qwen2.5-0.5b-base"
+LOCAL_DIR = Path(__file__).resolve().parent / "models" / "qwen2.5-0.5b-base"
 
 LOCAL_DIR.mkdir(parents=True, exist_ok=True)
 
