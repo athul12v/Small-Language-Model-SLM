@@ -699,6 +699,7 @@
       if (!q) return;
 
       appendUserMsg(q);
+      window.lastQuerySent = q;
       input.value = "";
       input.disabled = true;
       sendBtn.disabled = true;
@@ -770,6 +771,36 @@
         `;
       }
 
+      const reqId = data.request_id || "req_" + Date.now();
+      window.lastResponses = window.lastResponses || {};
+      window.lastResponses[reqId] = {
+        request_id: reqId,
+        query: window.lastQuerySent || "",
+        answer: data.answer || "",
+        context: (data.sources && data.sources.length > 0) ? (data.sources[0].input || "") : ""
+      };
+
+      let hitlHtml = "";
+      if (data.answer) {
+        hitlHtml = `
+          <div class="hitl-bar" id="hitl-bar-${reqId}" style="display: flex; gap: 8px; margin-top: 8px; align-items: center;">
+            <button onclick="sendHitlRating('${reqId}', 1, this)" title="Accurate & helpful" style="background: rgba(255,255,255,0.05); border: var(--border-subtle); color: var(--text-secondary); border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer;">👍 Helpful</button>
+            <button onclick="sendHitlRating('${reqId}', -1, this)" title="Inaccurate / Hallucination" style="background: rgba(255,255,255,0.05); border: var(--border-subtle); color: var(--text-secondary); border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer;">👎 Inaccurate</button>
+            <button onclick="toggleCorrectionBox('${reqId}')" title="Submit human correction for retraining" style="background: rgba(255,255,255,0.05); border: var(--border-subtle); color: var(--text-secondary); border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer;">✏️ Correct (HITL)</button>
+          </div>
+          <div id="correction-box-${reqId}" style="display: none; margin-top: 10px; padding: 12px; background: rgba(0,0,0,0.35); border-radius: 8px; border: var(--border-main);">
+            <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">
+              Provide verified gold correction (stored for model retraining):
+            </div>
+            <textarea id="correction-text-${reqId}" placeholder="Enter the exact, verified factual answer..." style="width: 100%; background: #171717; color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 8px; font-size: 13px; font-family: inherit; resize: vertical;" rows="3"></textarea>
+            <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px;">
+              <button onclick="toggleCorrectionBox('${reqId}')" style="background: transparent; color: var(--text-muted); border: none; padding: 4px 10px; font-size: 12px; cursor: pointer;">Cancel</button>
+              <button onclick="submitHumanCorrection('${reqId}')" style="background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 5px 12px; font-size: 12px; font-weight: 500; cursor: pointer;">Save Correction</button>
+            </div>
+          </div>
+        `;
+      }
+
       row.innerHTML = `
         <div class="assistant-avatar">✦</div>
         <div class="assistant-body">
@@ -777,9 +808,70 @@
           ${data.answer ? `<div class="assistant-text">${escapeHtml(data.answer)}</div>` : ""}
           ${clarificationHtml}
           ${sourcesHtml}
+          ${hitlHtml}
         </div>
       `;
       thread.appendChild(row);
+    }
+
+    async function sendHitlRating(reqId, rating, btn) {
+      const record = (window.lastResponses && window.lastResponses[reqId]) || {};
+      try {
+        await fetch("/api/feedback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            request_id: reqId,
+            query: record.query || "",
+            answer: record.answer || "",
+            context: record.context || "",
+            rating: rating,
+            type: rating > 0 ? "thumbs_up" : "thumbs_down"
+          })
+        });
+        const bar = document.getElementById(`hitl-bar-${reqId}`);
+        if (bar) bar.innerHTML = `<span style="font-size: 11.5px; color: var(--accent);">✓ Feedback saved to data/hitl_feedback.jsonl</span>`;
+      } catch (err) {
+        alert("Feedback error: " + err.message);
+      }
+    }
+
+    function toggleCorrectionBox(reqId) {
+      const box = document.getElementById(`correction-box-${reqId}`);
+      if (!box) return;
+      box.style.display = box.style.display === "none" ? "block" : "none";
+    }
+
+    async function submitHumanCorrection(reqId) {
+      const textarea = document.getElementById(`correction-text-${reqId}`);
+      const correctedText = textarea ? textarea.value.trim() : "";
+      if (!correctedText) {
+        alert("Please enter the corrected answer.");
+        return;
+      }
+      const record = (window.lastResponses && window.lastResponses[reqId]) || {};
+
+      try {
+        await fetch("/api/feedback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            request_id: reqId,
+            query: record.query || "",
+            rejected_answer: record.answer || "",
+            chosen_answer: correctedText,
+            context: record.context || "",
+            rating: -1,
+            type: "human_correction"
+          })
+        });
+        const box = document.getElementById(`correction-box-${reqId}`);
+        if (box) {
+          box.innerHTML = `<span style="font-size: 12px; color: var(--accent);">✓ Correction saved! It is now queued for model retraining.</span>`;
+        }
+      } catch (err) {
+        alert("Error saving correction: " + err.message);
+      }
     }
 
     function toggleSources(btn) {

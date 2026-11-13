@@ -4,11 +4,13 @@ app.py - Simple Web Server for SLM Enterprise AI Assistant.
 
 import os
 import json
+import time
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 from harness import Harness
 
 INDEX_HTML = Path(__file__).parent / "template" / "index.html"
+FEEDBACK_FILE = Path(__file__).parent / "data" / "hitl_feedback.jsonl"
 
 # Initialize AI Harness
 print("Initializing SLM Enterprise...")
@@ -52,6 +54,15 @@ class ChatHandler(BaseHTTPRequestHandler):
         if self.path == "/api/reset":
             harness.reset_session(body.get("session_id", "default"))
             self._send_response(200, "application/json", b'{"status": "reset"}')
+            return
+
+        # 3. HITL Feedback Endpoint
+        if self.path == "/api/feedback":
+            body["timestamp"] = time.time()
+            FEEDBACK_FILE.parent.mkdir(parents=True, exist_ok=True)
+            with open(FEEDBACK_FILE, "a", encoding="utf-8") as f:
+                f.write(json.dumps(body) + "\n")
+            self._send_response(200, "application/json", b'{"status": "feedback_recorded"}')
             return
 
         self._send_response(404, "application/json", b'{"error": "Not Found"}')

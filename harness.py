@@ -13,6 +13,7 @@ import os
 import re
 import json
 import time
+import uuid
 from typing import Dict, Any, List, Optional, Tuple
 from pathlib import Path
 
@@ -267,6 +268,7 @@ class Harness:
         Returns a clean dictionary matching the target schema.
         """
         start_time = time.perf_counter()
+        request_id = str(uuid.uuid4())
         session = self.get_session(session_id)
         provided_fields = provided_fields or {}
         required_fields = required_fields or []
@@ -275,6 +277,7 @@ class Harness:
         is_valid, error_msg = self.validate_input(query)
         if not is_valid:
             return {
+                "request_id": request_id,
                 "status": "validation_error",
                 "answer": f"Input validation rejected the request: {error_msg}",
                 "missing_fields": [],
@@ -296,6 +299,7 @@ class Harness:
         )
         if status:
             return {
+                "request_id": request_id,
                 "status": status,
                 "answer": None,
                 "missing_fields": missing_fields,
@@ -316,6 +320,7 @@ class Harness:
         # If still no documents, fail safely
         if not sources:
             return {
+                "request_id": request_id,
                 "status": "insufficient_evidence",
                 "answer": "I couldn't find sufficiently relevant information in the enterprise knowledge base. Please consult the appropriate company team.",
                 "missing_fields": [],
@@ -354,8 +359,11 @@ class Harness:
         session["history"].append({"user": clean_query, "assistant": answer})
 
         latency = round((time.perf_counter() - start_time) * 1000, 1)
+        retrieval_score = sources[0].get("score", 0.0) if sources else 0.0
+        confidence = "HIGH" if retrieval_score >= 1.5 else ("MEDIUM" if retrieval_score >= 1.0 else "LOW")
 
         return {
+            "request_id": request_id,
             "status": "success",
             "answer": answer,
             "missing_fields": [],
@@ -365,5 +373,6 @@ class Harness:
                 "latency_ms": latency,
                 "tokens": token_count,
                 "session_id": session_id,
+                "confidence": confidence,
             },
         }
